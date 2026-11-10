@@ -1,0 +1,33 @@
+# CubeGPT-3.1's recipe (configs/8a1_wsd_bs1024_t300m.toml) with depth-weighted training data:
+# scramble depth d is drawn with weight max(d, 1) (depth 18 appears 18x as often as depth 1).
+# Chosen from 25.6M-sample runs (batch 1024, lr 5.6e-4), all scored on the same 200 scrambles at width 4000:
+#   power 0 (uniform): 20.02 moves | 1: 19.77 (-0.24 +- 0.09) | 1.5: 19.89 | 2: 19.85
+#   prior-corrected held-out BCE vs uniform: 1: -1.21% | 1.5: -0.67% | 2: +0.44%
+# Held-out eval loss / metrics are still measured on uniform depths, so raw numbers carry a small
+# prior-shift handicap (the model predicts slightly deeper); see data_analysis/depth_breakdown.py.
+name = "8a1-wsd-bs1024-t300m-depthw1"
+gpu = "H100"
+seed = 0
+divergence_rollbacks = 3
+divergence_lr_factor = 0.7
+keep_every_samples = 25_600_000
+
+[model]
+arch = "moe"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 8
+n_experts = 8
+n_active = 1
+
+[[stages]]
+label = "wsd"
+samples = 307_200_000
+batch_size = 1024
+lr = 5.6e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 61_440_000
+eval_every_samples = 512_000
+depth_weight_power = 1.0

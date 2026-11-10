@@ -1,0 +1,39 @@
+# Tiny end-to-end check of the whole pipeline: ~2-3 min on an H100 (a few cents).
+#   modal run modal_app.py::train --config configs/smoke.toml --name smoke-$(date +%s)
+# Also exercise crash -> Modal retry -> resume-from-checkpoint:
+#   ... --overrides "debug_crash_at_step=450"
+name = "smoke"
+gpu = "H100"
+seed = 0
+timeout_hours = 1.0
+max_retries = 2
+eval_samples = 16384
+final_eval_samples = 65536
+checkpoint_every_minutes = 0.25
+status_every_minutes = 0.25
+watchdog_minutes = 5
+
+[model]
+arch = "moe"
+d_model = 64
+n_heads = 4
+d_ffwd = 96
+n_layers = 2
+n_experts = 4
+n_active = 1
+
+[[stages]]
+label = "random"
+steps = 600
+batch_size = 1024
+lr = 1e-3
+plateau_patience = 200
+eval_every = 100
+
+[[stages]]
+label = "path"
+data = "path"
+steps = 200
+batch_size = 1029        # 49 whole 0..20-move paths per batch
+lr = 1e-4
+eval_every = 100

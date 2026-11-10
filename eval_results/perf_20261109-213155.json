@@ -1,0 +1,44 @@
+{
+  "host": "unknown, 24 usable cores",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "torch": "2.14.1+cu130",
+  "batch_size": 1024,
+  "rows": [
+    {
+      "section": "layout",
+      "name": "attn8-dense4 adam=default",
+      "ms_per_step": 15.871699055445543,
+      "samples_per_sec": 64517.35232773759,
+      "params": 3297981,
+      "tensors": 118
+    },
+    {
+      "section": "layout",
+      "name": "a8f4a1f1 adam=default",
+      "ms_per_step": 18.21012614318182,
+      "samples_per_sec": 56232.44956946127,
+      "params": 3824999,
+      "tensors": 136
+    },
+    {
+      "section": "layout",
+      "name": "attn8-dense4-d384 adam=default",
+      "ms_per_step": 19.65052274264706,
+      "samples_per_sec": 52110.57300667312,
+      "params": 7307797,
+      "tensors": 118
+    },
+    {
+      "section": "datagen",
+      "name": "canonical=True",
+      "ms_per_step": 0.24087541796874445,
+      "samples_per_sec": 4251160.241402767
+    },
+    {
+      "section": "datagen",
+      "name": "canonical=False",
+      "ms_per_step": 0.05592466796874862,
+      "samples_per_sec": 18310345.6344564
+    }
+  ]
+}

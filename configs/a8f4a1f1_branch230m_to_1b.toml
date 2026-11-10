@@ -1,0 +1,58 @@
+# Continuation of a8f4a1f1-prenorm-adamw-lr4e-4-t300m (8 + 4 + 1 + 1, pre-norm, AdamW; 0.10386 at 307M samples)
+# from its last constant-lr snapshot (230.4M samples at lr 4e-4), stepping the lr down in three 307.2M-sample stages:
+#   stage 1: lr 2e-4 constant        (230.4M -> 537.6M total samples)
+#   stage 2: lr 1e-4 constant        (537.6M -> 844.8M)
+#   stage 3: lr 1e-4 -> 0, linear    (844.8M -> 1152M)
+# This run's sample counter starts at 0; add 230.4M for total samples seen.
+# Snapshots hold weights only and each stage builds a new optimizer, so Adam restarts at every stage
+# boundary (hence the short warmups). data_seed differs from the parent run so the training stream is new;
+# the eval set (seed 0) is the same as every earlier run's.
+name = "a8f4a1f1-branch230m-to-1b"
+gpu = "H100"
+seed = 0
+data_seed = 1
+init_from = "runs/a8f4a1f1-prenorm-adamw-lr4e-4-t300m/ckpt/model_230400000.pt"
+adam_fused = false
+grad_clip = 1.0
+adam_beta2 = 0.95
+weight_decay = 0.1
+divergence_rollbacks = 3
+divergence_lr_factor = 0.7
+keep_every_samples = 25_600_000
+
+[model]
+arch = "gated"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 14
+ffn_layers = "00000000ffff0f"
+pre_norm = true
+
+[[stages]]
+label = "lr2e-4"
+samples = 307_200_000
+batch_size = 1024
+lr = 2e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+eval_every_samples = 512_000
+
+[[stages]]
+label = "lr1e-4"
+samples = 307_200_000
+batch_size = 1024
+lr = 1e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+eval_every_samples = 512_000
+
+[[stages]]
+label = "decay"
+samples = 307_200_000
+batch_size = 1024
+lr = 1e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 305_408_000
+eval_every_samples = 512_000

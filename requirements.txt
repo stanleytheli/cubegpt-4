@@ -1,0 +1,4 @@
+modal==1.6.3
+# optional, only for running cubegpt/ locally on CPU (tests/debugging):
+# torch==2.14.1
+# numpy==2.4.6

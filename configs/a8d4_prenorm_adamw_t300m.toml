@@ -1,0 +1,35 @@
+# 300M-sample run of the attention-first dense layout with the recipe that won the 25.6M sweeps:
+# pre-norm, AdamW (beta2 0.95, weight decay 0.1), gradient clipping 1.0, lr 8e-4.
+# 8 attention-only layers, then 4 FFN-only layers (dense, gated). 3.30M params.
+# At 25.6M samples with this recipe: 0.12019. Reference at 307M samples: CubeGPT-3.1 0.10667 (19.09M params),
+# 8 + 4 on the old recipe (post-norm, plain Adam, lr 5.6e-4, two divergence rollbacks) 0.10715.
+# Data budget, schedule and snapshots are identical to configs/8a1_wsd_bs1024_t300m.toml.
+name = "a8d4-prenorm-adamw-t300m"
+gpu = "H100"
+seed = 0
+adam_fused = false
+grad_clip = 1.0
+adam_beta2 = 0.95
+weight_decay = 0.1
+divergence_rollbacks = 3
+divergence_lr_factor = 0.7
+keep_every_samples = 25_600_000
+
+[model]
+arch = "gated"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 12
+ffn_layers = "00000000ffff"
+pre_norm = true
+
+[[stages]]
+label = "wsd"
+samples = 307_200_000
+batch_size = 1024
+lr = 8e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 61_440_000
+eval_every_samples = 512_000

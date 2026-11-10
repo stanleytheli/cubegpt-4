@@ -1,0 +1,33 @@
+# Short warmup-stable-decay runs (25.6M samples) for picking the peak LR and batch size.
+# Each run gets its own cooldown, so the final losses are comparable across LRs:
+#   warmup 1.28M samples (5%) -> constant peak lr -> linear decay to 0 over the last 5.12M (20%).
+# Reference: the eval-plateau run (batch 256, lr 1e-4 held, then a 10x drop) was at ~0.1274
+# eval loss at 27M samples.
+#
+# Sweep with --name / --overrides, e.g.
+#   modal run --detach modal_app.py::train --config configs/wsd_sweep_25m.toml \
+#       --name wsd25m-bs1024-lr4e-4 --overrides "stages.*.batch_size=1024,stages.*.lr=4e-4"
+#   cosine instead:    --overrides "stages.*.schedule=\"cosine\",stages.*.decay_samples=0"
+#   40% decay:         --overrides "stages.*.decay_samples=10240000"
+name = "wsd25m"
+gpu = "H100"
+seed = 0
+
+[model]
+arch = "moe"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 8
+n_experts = 8
+n_active = 1
+
+[[stages]]
+label = "wsd"
+samples = 25_600_000
+batch_size = 1024
+lr = 4e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 5_120_000
+eval_every_samples = 256_000

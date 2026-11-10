@@ -1,0 +1,128 @@
+{
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "torch": "2.14.1+cu130",
+  "model": {
+    "arch": "moe",
+    "d_model": 256,
+    "n_heads": 16,
+    "d_ffwd": 341,
+    "n_layers": 8,
+    "n_experts": 8,
+    "n_active": 1,
+    "first_dense_layers": 0,
+    "router": "sigmoid"
+  },
+  "verify": {},
+  "throughput": [
+    {
+      "impl": "grouped",
+      "batch_size": 1024,
+      "steps": 202,
+      "ms_per_step": 40.00681120727101,
+      "samples_per_sec": 25595.64156950089,
+      "peak_mem_gib": 8.875213623046875
+    }
+  ],
+  "compare": [
+    {
+      "impl": "grouped",
+      "batch_size": 1024,
+      "steps": 374,
+      "ms_per_step": 21.675024807881464,
+      "samples_per_sec": 47243.31386359722,
+      "peak_mem_gib": 8.653071880340576,
+      "model": {
+        "arch": "gated",
+        "d_model": 256,
+        "n_heads": 16,
+        "d_ffwd": 341,
+        "n_layers": 8,
+        "n_experts": 8,
+        "n_active": 1,
+        "first_dense_layers": 0,
+        "router": "sigmoid"
+      },
+      "params": 4351333
+    },
+    {
+      "impl": "grouped",
+      "batch_size": 1024,
+      "steps": 318,
+      "ms_per_step": 25.43854792807368,
+      "samples_per_sec": 40253.86994946852,
+      "peak_mem_gib": 8.688991069793701,
+      "model": {
+        "arch": "gated",
+        "d_model": 320,
+        "n_heads": 16,
+        "d_ffwd": 427,
+        "n_layers": 8,
+        "n_experts": 8,
+        "n_active": 1,
+        "first_dense_layers": 0,
+        "router": "sigmoid"
+      },
+      "params": 6755013
+    },
+    {
+      "impl": "grouped",
+      "batch_size": 1024,
+      "steps": 317,
+      "ms_per_step": 25.573283546289858,
+      "samples_per_sec": 40041.78806943079,
+      "peak_mem_gib": 8.732402324676514,
+      "model": {
+        "arch": "gated",
+        "d_model": 384,
+        "n_heads": 16,
+        "d_ffwd": 512,
+        "n_layers": 8,
+        "n_experts": 8,
+        "n_active": 1,
+        "first_dense_layers": 0,
+        "router": "sigmoid"
+      },
+      "params": 9675797
+    },
+    {
+      "impl": "grouped",
+      "batch_size": 1024,
+      "steps": 236,
+      "ms_per_step": 34.25346899746081,
+      "samples_per_sec": 29894.782337984765,
+      "peak_mem_gib": 8.787500858306885,
+      "model": {
+        "arch": "gated",
+        "d_model": 448,
+        "n_heads": 16,
+        "d_ffwd": 597,
+        "n_layers": 8,
+        "n_experts": 8,
+        "n_active": 1,
+        "first_dense_layers": 0,
+        "router": "sigmoid"
+      },
+      "params": 13119845
+    },
+    {
+      "impl": "grouped",
+      "batch_size": 1024,
+      "steps": 220,
+      "ms_per_step": 36.76782672462815,
+      "samples_per_sec": 27850.435862560655,
+      "peak_mem_gib": 8.843150615692139,
+      "model": {
+        "arch": "gated",
+        "d_model": 512,
+        "n_heads": 16,
+        "d_ffwd": 683,
+        "n_layers": 8,
+        "n_experts": 8,
+        "n_active": 1,
+        "first_dense_layers": 0,
+        "router": "sigmoid"
+      },
+      "params": 17099461
+    }
+  ]
+}

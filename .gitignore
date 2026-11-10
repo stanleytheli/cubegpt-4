@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+*.tmp
+runs/
+issue_export/
+.DS_Store

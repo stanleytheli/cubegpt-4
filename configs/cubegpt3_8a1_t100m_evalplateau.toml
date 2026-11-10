@@ -1,0 +1,53 @@
+# Same as cubegpt3_8a1_t100m.toml (same seed, model, batch, stages/warm restarts,
+# 102.4M samples), but the LR decays on a plateau of the held-out eval-loss trend
+# instead of torch's ReduceLROnPlateau on noisy per-step batch loss
+# (see cubegpt/schedule.py). A/B comparison: runs 8a1-t100m-bs256 vs this.
+#
+# Detector: every eval (256k samples), once 20 evals (5.12M samples) have accumulated
+# at the current LR, fit a line to them; if the loss improved < 0.5% across that
+# window, halve the LR (never below 1e-7) and start a fresh window.
+name = "8a1-t100m-evalplateau"
+gpu = "H100"
+seed = 0
+
+[model]
+arch = "moe"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 8
+n_experts = 8
+n_active = 1
+
+[[stages]]
+label = "lr 1e-4"
+samples = 25_600_000
+batch_size = 256
+lr = 1e-4
+eval_every_samples = 256_000
+schedule = "eval_plateau"
+plateau_window_samples = 5_120_000
+plateau_threshold = 0.005
+plateau_min_lr = 1e-7
+
+[[stages]]
+label = "lr 1e-5"
+samples = 25_600_000
+batch_size = 256
+lr = 1e-5
+eval_every_samples = 256_000
+schedule = "eval_plateau"
+plateau_window_samples = 5_120_000
+plateau_threshold = 0.005
+plateau_min_lr = 1e-7
+
+[[stages]]
+label = "lr 1e-6"
+samples = 51_200_000
+batch_size = 256
+lr = 1e-6
+eval_every_samples = 256_000
+schedule = "eval_plateau"
+plateau_window_samples = 5_120_000
+plateau_threshold = 0.005
+plateau_min_lr = 1e-7

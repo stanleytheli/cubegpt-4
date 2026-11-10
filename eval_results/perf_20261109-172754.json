@@ -1,0 +1,68 @@
+{
+  "host": "unknown, 24 usable cores",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "torch": "2.14.1+cu130",
+  "batch_size": 1024,
+  "rows": [
+    {
+      "section": "layout",
+      "name": "moe8 adam=default",
+      "ms_per_step": 40.51306389393938,
+      "samples_per_sec": 25275.797522516852,
+      "params": 19085973,
+      "tensors": 494
+    },
+    {
+      "section": "layout",
+      "name": "attn8-ffn4 adam=default",
+      "ms_per_step": 29.81363538661711,
+      "samples_per_sec": 34346.70031752176,
+      "params": 10665301,
+      "tensors": 290
+    },
+    {
+      "section": "layout",
+      "name": "attn8-dense4 adam=default",
+      "ms_per_step": 19.942500370646766,
+      "samples_per_sec": 51347.62346587286,
+      "params": 3297981,
+      "tensors": 118
+    },
+    {
+      "section": "layout",
+      "name": "attn8-dense6 adam=default",
+      "ms_per_step": 21.207971383597894,
+      "samples_per_sec": 48283.7316911864,
+      "params": 3824657,
+      "tensors": 134
+    },
+    {
+      "section": "layout",
+      "name": "attn10-dense4 adam=default",
+      "ms_per_step": 22.975598636103157,
+      "samples_per_sec": 44569.02369416036,
+      "params": 3825341,
+      "tensors": 138
+    },
+    {
+      "section": "layout",
+      "name": "dense8 adam=default",
+      "ms_per_step": 22.152667157458566,
+      "samples_per_sec": 46224.68223449248,
+      "params": 4351333,
+      "tensors": 150
+    },
+    {
+      "section": "datagen",
+      "name": "canonical=True",
+      "ms_per_step": 0.2666206953124972,
+      "samples_per_sec": 3840662.101641449
+    },
+    {
+      "section": "datagen",
+      "name": "canonical=False",
+      "ms_per_step": 0.08317910937499784,
+      "samples_per_sec": 12310783.412977925
+    }
+  ]
+}

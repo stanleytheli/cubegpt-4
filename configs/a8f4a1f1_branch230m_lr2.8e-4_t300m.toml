@@ -1,0 +1,37 @@
+# Continuation of a8f4a1f1-prenorm-adamw-lr4e-4-t300m (8 + 4 + 1 + 1, pre-norm, AdamW; 0.10386 at 307M samples)
+# from its last constant-lr snapshot (230.4M samples, lr 4e-4, before the decay began at 245.8M):
+# another 307.2M samples at 0.7x the lr (2.8e-4), ending with the same 61.44M-sample linear decay.
+# Total training: 537.6M samples. This run's sample counter starts at 0; add 230.4M to compare.
+# The optimizer state is not in the snapshot, so Adam restarts (hence the short warmup).
+# data_seed differs from the parent run so the training stream is new; the eval set (seed 0) is the same.
+name = "a8f4a1f1-branch230m-lr2.8e-4-t300m"
+gpu = "H100"
+seed = 0
+data_seed = 1
+init_from = "runs/a8f4a1f1-prenorm-adamw-lr4e-4-t300m/ckpt/model_230400000.pt"
+adam_fused = false
+grad_clip = 1.0
+adam_beta2 = 0.95
+weight_decay = 0.1
+divergence_rollbacks = 3
+divergence_lr_factor = 0.7
+keep_every_samples = 25_600_000
+
+[model]
+arch = "gated"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 14
+ffn_layers = "00000000ffff0f"
+pre_norm = true
+
+[[stages]]
+label = "wsd"
+samples = 307_200_000
+batch_size = 1024
+lr = 2.8e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 61_440_000
+eval_every_samples = 512_000

@@ -1,0 +1,30 @@
+# CubeGPT-3.1 long-run recipe (configs/8a1_wsd_bs1024_t300m.toml) on the attention-first dense layout:
+# 8 attention-only layers, then 4 FFN-only layers with plain (dense, gated) FFNs. 3.30M params (3.1: 19.09M).
+# At 25.6M samples: 0.12374 vs 0.12417 for the 3.1 architecture, at 2.0x the training speed.
+# lr sweep on the MoE version of this layout: 4e-4 0.12465 | 5.6e-4 0.12328 | 8e-4 and 1.1e-3 diverged.
+# adam_fused = false keeps the optimizer identical to the 3.1 run.
+name = "attn8-dense4-wsd-bs1024-t300m"
+gpu = "H100"
+seed = 0
+adam_fused = false
+divergence_rollbacks = 3
+divergence_lr_factor = 0.7
+keep_every_samples = 25_600_000
+
+[model]
+arch = "gated"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 12
+ffn_layers = "00000000ffff"
+
+[[stages]]
+label = "wsd"
+samples = 307_200_000
+batch_size = 1024
+lr = 5.6e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 61_440_000
+eval_every_samples = 512_000

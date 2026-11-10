@@ -1,0 +1,188 @@
+{
+  "spec": {
+    "checkpoint": "models/cubegpt-3-8a1-t300m.pth",
+    "model": {
+      "arch": "moe",
+      "d_model": 256,
+      "n_heads": 16,
+      "d_ffwd": 341,
+      "n_layers": 8,
+      "n_experts": 8,
+      "n_active": 1
+    },
+    "metrics_samples": 4096,
+    "solve_cubes": 2,
+    "widths": [
+      50
+    ],
+    "scramble_moves": 30,
+    "max_moves": 30,
+    "seed": 0,
+    "eval_batch_size": 16384,
+    "tf32": true
+  },
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "gpu_requested": "H100",
+  "expert_stats": {
+    "n_tokens_per_layer": 81920,
+    "dead_experts": 31,
+    "dead_per_layer": [
+      3,
+      3,
+      3,
+      5,
+      5,
+      5,
+      3,
+      4
+    ],
+    "share_per_layer": [
+      [
+        0.1919,
+        0.195,
+        0.2305,
+        0.0,
+        0.0,
+        0.0,
+        0.2036,
+        0.179
+      ],
+      [
+        0.1965,
+        0.1991,
+        0.1992,
+        0.2519,
+        0.1532,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.1993,
+        0.2184,
+        0.2061,
+        0.2085,
+        0.1678,
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.2999,
+        0.2766,
+        0.0,
+        0.0,
+        0.4236
+      ],
+      [
+        0.0,
+        0.3846,
+        0.2671,
+        0.0,
+        0.0,
+        0.3482,
+        0.0,
+        0.0
+      ],
+      [
+        0.3652,
+        0.0,
+        0.2779,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.3569
+      ],
+      [
+        0.0,
+        0.1648,
+        0.2255,
+        0.1462,
+        0.0,
+        0.1744,
+        0.0,
+        0.2891
+      ],
+      [
+        0.5074,
+        0.0,
+        0.1355,
+        0.2229,
+        0.0,
+        0.1342,
+        0.0,
+        0.0
+      ]
+    ],
+    "bias_spread": 501.9083557128906,
+    "bias_absmax": 252.69290161132812
+  },
+  "metrics": {
+    "n": 4096,
+    "mse": 4.034419237818813,
+    "mse_stderr": 0.11645937548763906,
+    "within3": 0.842041015625,
+    "within3_stderr": 0.005698477207802652,
+    "within4": 0.926025390625,
+    "within4_stderr": 0.004089524493353992,
+    "rounded_acc": 0.447998046875,
+    "rounded_acc_stderr": 0.007770131942766752,
+    "bce": 0.13171702339535668,
+    "seconds": 0.086334228515625
+  },
+  "solve_summary": {
+    "50": {
+      "n": 2,
+      "solve_rate": 0.5,
+      "mean_moves": 20.0,
+      "mao": 2.3000000000000007,
+      "median_moves": 20.0,
+      "mean_seconds": 0.38849544525146484
+    }
+  },
+  "solves": [
+    {
+      "idx": 0,
+      "width": 50,
+      "scramble": "GRGWWOYYWWBGGOWBOOOROOGGYBRGBYORBBWORWRRBRBGWBYYYYGRYW",
+      "solved": true,
+      "n_moves": 20,
+      "moves": [
+        "B'",
+        "U'",
+        "F2",
+        "R'",
+        "B",
+        "U2",
+        "L'",
+        "D'",
+        "B'",
+        "D2",
+        "B",
+        "D",
+        "L'",
+        "F'",
+        "L",
+        "B2",
+        "L'",
+        "F",
+        "L2",
+        "R'"
+      ],
+      "seconds": 0.3251185417175293
+    },
+    {
+      "idx": 1,
+      "width": 50,
+      "scramble": "RGYGWOOOYYRWYOYOBWBWOBGWBRWBYBRRBROYROGWBGOWGRYGRYBWGG",
+      "solved": false,
+      "n_moves": null,
+      "moves": null,
+      "seconds": 0.4518723487854004
+    }
+  ]
+}

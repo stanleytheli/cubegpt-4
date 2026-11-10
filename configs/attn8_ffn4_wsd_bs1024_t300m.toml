@@ -1,0 +1,31 @@
+# CubeGPT-3.1 long-run recipe (configs/8a1_wsd_bs1024_t300m.toml) on the attention-first layout:
+# 8 attention-only layers, then 4 FFN-only (8-expert MoE) layers. 10.67M params (3.1: 19.09M).
+# At 25.6M samples this layout reached 0.12328 vs 0.12417 for the 8-layer MoE.
+# adam_fused = false keeps the optimizer identical to the 3.1 run.
+name = "attn8-ffn4-wsd-bs1024-t300m"
+gpu = "H100"
+seed = 0
+adam_fused = false
+divergence_rollbacks = 3
+divergence_lr_factor = 0.7
+keep_every_samples = 25_600_000
+
+[model]
+arch = "moe"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 12
+ffn_layers = "00000000ffff"
+n_experts = 8
+n_active = 1
+
+[[stages]]
+label = "wsd"
+samples = 307_200_000
+batch_size = 1024
+lr = 5.6e-4
+schedule = "wsd"
+warmup_samples = 1_280_000
+decay_samples = 61_440_000
+eval_every_samples = 512_000

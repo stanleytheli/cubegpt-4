@@ -1,0 +1,60 @@
+# Approximate reproduction of CubeGPT-3-8A1-t100m (README), reconstructed from
+# data_analysis/transcript.txt: three stages at batch 256 (25.6M + 25.6M + 51.2M =
+# 102.4M samples), lr 1e-4 -> 1e-5 -> 1e-6, each with ReduceLROnPlateau(factor 0.5)
+# stepped on the per-step training loss.
+#
+# The schedule is written in samples, so batch size is a free experimental knob:
+# at batch 256 this is the original step schedule (patience ~10k / 10k / 15k steps,
+# eval every 1000 steps). Sweep it with e.g.
+#   --overrides "stages.*.batch_size=4096"              same data schedule, 16x fewer steps
+#   --overrides "stages.*.batch_size=4096,lr_scale=4"   ... with sqrt-scaled learning rates
+#
+# Patience is inferred from the LR trace in transcript.txt: the original never halved
+# its LR more often than every ~10 evals (10k steps) in stages 1-2 and every 15 evals
+# in stage 3, so patience was ~10k/10k/15k steps. (An earlier version of this file
+# used 4000 steps from a notebook note; that decays 2.5x too fast and underperforms
+# the original. See run 8a1-t100m-bs256.)
+#
+# Known difference: here MoE load balancing works throughout. In the original run,
+# stages 2 and 3 ran with the model left in eval mode after measure_acc(), which froze
+# tokens_per_expert, so the expert biases drifted to about +/-300 and 3-5 of 8 experts
+# per layer stopped receiving tokens.
+#
+# The [model] table also serves as --model-config when evaluating the existing
+# cubegpt-3-8a1-*.pth checkpoints.
+name = "8a1-t100m"
+gpu = "H100"
+seed = 0
+
+[model]
+arch = "moe"
+d_model = 256
+n_heads = 16
+d_ffwd = 341
+n_layers = 8
+n_experts = 8
+n_active = 1
+
+[[stages]]
+label = "lr 1e-4"
+samples = 25_600_000
+batch_size = 256
+lr = 1e-4
+plateau_patience_samples = 2_560_000   # 10k steps at batch 256
+eval_every_samples = 256_000           # 1000 steps at batch 256
+
+[[stages]]
+label = "lr 1e-5"
+samples = 25_600_000
+batch_size = 256
+lr = 1e-5
+plateau_patience_samples = 2_560_000
+eval_every_samples = 256_000
+
+[[stages]]
+label = "lr 1e-6"
+samples = 51_200_000
+batch_size = 256
+lr = 1e-6
+plateau_patience_samples = 3_840_000   # 15k steps
+eval_every_samples = 256_000

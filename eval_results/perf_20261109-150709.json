@@ -1,0 +1,287 @@
+{
+  "host": "unknown, 24 usable cores",
+  "gpu": "NVIDIA H100 80GB HBM3",
+  "torch": "2.14.1+cu130",
+  "batch_size": 1024,
+  "rows": [
+    {
+      "section": "layout",
+      "name": "moe8 adam=default",
+      "ms_per_step": 40.60062674193549,
+      "samples_per_sec": 25221.285536026786,
+      "params": 19085973,
+      "tensors": 494
+    },
+    {
+      "section": "layout",
+      "name": "moe8 adam=fused",
+      "ms_per_step": 37.708884481203015,
+      "samples_per_sec": 27155.404199518012,
+      "params": 19085973,
+      "tensors": 494
+    },
+    {
+      "section": "layout",
+      "name": "attn8-ffn4 adam=default",
+      "ms_per_step": 30.178618421686757,
+      "samples_per_sec": 33931.30810998756,
+      "params": 10665301,
+      "tensors": 290
+    },
+    {
+      "section": "layout",
+      "name": "attn8-ffn4 adam=fused",
+      "ms_per_step": 28.1476826011236,
+      "samples_per_sec": 36379.54905598957,
+      "params": 10665301,
+      "tensors": 290
+    },
+    {
+      "section": "layout",
+      "name": "attn4-moe4 adam=default",
+      "ms_per_step": 28.615382011428576,
+      "samples_per_sec": 35784.94949293457,
+      "params": 10665301,
+      "tensors": 290
+    },
+    {
+      "section": "layout",
+      "name": "attn4-moe4 adam=fused",
+      "ms_per_step": 26.817384433155087,
+      "samples_per_sec": 38184.18617790331,
+      "params": 10665301,
+      "tensors": 290
+    },
+    {
+      "section": "layout",
+      "name": "attn7-moe1 adam=default",
+      "ms_per_step": 19.785919592885378,
+      "samples_per_sec": 51753.97560840235,
+      "params": 4349797,
+      "tensors": 137
+    },
+    {
+      "section": "layout",
+      "name": "attn7-moe1 adam=fused",
+      "ms_per_step": 18.943681549242434,
+      "samples_per_sec": 54054.96272401972,
+      "params": 4349797,
+      "tensors": 137
+    },
+    {
+      "section": "layout",
+      "name": "dense8 adam=default",
+      "ms_per_step": 22.19077523893804,
+      "samples_per_sec": 46145.300872733475,
+      "params": 4351333,
+      "tensors": 150
+    },
+    {
+      "section": "layout",
+      "name": "dense8 adam=fused",
+      "ms_per_step": 21.39451007692305,
+      "samples_per_sec": 47862.74592492427,
+      "params": 4351333,
+      "tensors": 150
+    },
+    {
+      "section": "layout",
+      "name": "attnonly adam=default",
+      "ms_per_step": 16.55525803960395,
+      "samples_per_sec": 61853.460547117946,
+      "params": 2244629,
+      "tensors": 86
+    },
+    {
+      "section": "layout",
+      "name": "attnonly adam=fused",
+      "ms_per_step": 16.004497015974465,
+      "samples_per_sec": 63982.01699046971,
+      "params": 2244629,
+      "tensors": 86
+    },
+    {
+      "section": "breakdown",
+      "name": "moe8 fwd adam=default",
+      "ms_per_step": 15.832041705696208,
+      "samples_per_sec": 64678.96049260502
+    },
+    {
+      "section": "breakdown",
+      "name": "moe8 fwd+bwd adam=default",
+      "ms_per_step": 38.12814398484845,
+      "samples_per_sec": 26856.801642558898
+    },
+    {
+      "section": "breakdown",
+      "name": "moe8 fwd+bwd+opt adam=default",
+      "ms_per_step": 50.893567060606074,
+      "samples_per_sec": 20120.421089380125
+    },
+    {
+      "section": "breakdown",
+      "name": "moe8 fwd+bwd+opt adam=fused",
+      "ms_per_step": 48.24543137499992,
+      "samples_per_sec": 21224.807630813764
+    },
+    {
+      "section": "breakdown",
+      "name": "moe8 all adam=default",
+      "ms_per_step": 40.75156918699185,
+      "samples_per_sec": 25127.866740573685
+    },
+    {
+      "section": "breakdown",
+      "name": "moe8 all adam=fused",
+      "ms_per_step": 37.45502821641791,
+      "samples_per_sec": 27339.453439555637
+    },
+    {
+      "section": "breakdown",
+      "name": "attnonly fwd adam=default",
+      "ms_per_step": 5.199520443866949,
+      "samples_per_sec": 196941.23930368436
+    },
+    {
+      "section": "breakdown",
+      "name": "attnonly fwd+bwd adam=default",
+      "ms_per_step": 15.553224043478238,
+      "samples_per_sec": 65838.43948608087
+    },
+    {
+      "section": "breakdown",
+      "name": "attnonly fwd+bwd+opt adam=default",
+      "ms_per_step": 16.650541528239216,
+      "samples_per_sec": 61499.50127827989
+    },
+    {
+      "section": "breakdown",
+      "name": "attnonly fwd+bwd+opt adam=fused",
+      "ms_per_step": 15.879931212698411,
+      "samples_per_sec": 64483.90652858476
+    },
+    {
+      "section": "breakdown",
+      "name": "attnonly all adam=default",
+      "ms_per_step": 16.589362903973573,
+      "samples_per_sec": 61726.30051722637
+    },
+    {
+      "section": "breakdown",
+      "name": "attnonly all adam=fused",
+      "ms_per_step": 16.074155605769153,
+      "samples_per_sec": 63704.74599813365
+    },
+    {
+      "section": "datagen",
+      "name": "canonical=True",
+      "ms_per_step": 0.2640704023436635,
+      "samples_per_sec": 3877753.776689284
+    },
+    {
+      "section": "datagen",
+      "name": "canonical=False",
+      "ms_per_step": 0.08127077734376709,
+      "samples_per_sec": 12599854.87364769
+    },
+    {
+      "section": "compile",
+      "name": "attnonly compile=default adam=fused",
+      "ms_per_step": 24.34522217961167,
+      "samples_per_sec": 42061.641189603375,
+      "compile_s": 21.6
+    },
+    {
+      "section": "compile",
+      "name": "attnonly compile=reduce-overhead adam=fused",
+      "ms_per_step": 21.255327313559363,
+      "samples_per_sec": 48176.15767068249,
+      "compile_s": 10.4
+    },
+    {
+      "section": "compile",
+      "name": "dense8 compile=default adam=fused",
+      "ms_per_step": 31.855873821655948,
+      "samples_per_sec": 32144.77825134636,
+      "compile_s": 10.3
+    },
+    {
+      "section": "compile",
+      "name": "attn8-ffn4 compile=default adam=fused",
+      "ms_per_step": 37.331086761193816,
+      "samples_per_sec": 27430.222070696913,
+      "compile_s": 35.1
+    },
+    {
+      "section": "compile",
+      "name": "moe8 compile=default adam=fused",
+      "ms_per_step": 52.6708966000001,
+      "samples_per_sec": 19441.476528804676,
+      "compile_s": 22.2
+    },
+    {
+      "section": "concurrent",
+      "name": "moe8 x1 processes (fused)",
+      "ms_per_step": 39.07950903906254,
+      "samples_per_sec": 26202.990395208,
+      "per_process_ms": [
+        39.08
+      ]
+    },
+    {
+      "section": "concurrent",
+      "name": "moe8 x2 processes (fused)",
+      "ms_per_step": 31.77055513673591,
+      "samples_per_sec": 32231.101899002108,
+      "per_process_ms": [
+        63.54,
+        63.54
+      ]
+    },
+    {
+      "section": "concurrent",
+      "name": "moe8 x4 processes (fused)",
+      "ms_per_step": 31.052162972623083,
+      "samples_per_sec": 32976.76882936632,
+      "per_process_ms": [
+        124.12,
+        124.57,
+        123.86,
+        124.29
+      ]
+    },
+    {
+      "section": "concurrent",
+      "name": "attn8-ffn4 x1 processes (fused)",
+      "ms_per_step": 27.43310849726781,
+      "samples_per_sec": 37327.15890005629,
+      "per_process_ms": [
+        27.43
+      ]
+    },
+    {
+      "section": "concurrent",
+      "name": "attn8-ffn4 x2 processes (fused)",
+      "ms_per_step": 23.110397638767424,
+      "samples_per_sec": 44309.060190390315,
+      "per_process_ms": [
+        46.35,
+        46.09
+      ]
+    },
+    {
+      "section": "concurrent",
+      "name": "attn8-ffn4 x4 processes (fused)",
+      "ms_per_step": 23.74281536067879,
+      "samples_per_sec": 43128.83642669766,
+      "per_process_ms": [
+        94.88,
+        94.89,
+        94.88,
+        95.24
+      ]
+    }
+  ],
+  "profile_moe8_default": "--------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  \n                                        Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  \n--------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  \n                            cudaLaunchKernel        11.66%     145.776ms        11.66%     145.776ms       7.325us       0.000us         0.00%       0.000us       0.000us         19900  \n                                   aten::bmm         7.21%      90.148ms         8.52%     106.560ms      66.600us     118.588ms        23.21%     118.588ms      74.118us          1600  \n                    Optimizer.step#Adam.step         6.94%      86.726ms        13.88%     173.511ms       8.676ms       0.000us         0.00%      11.302ms     565.080us            20  \n                                    aten::mm         4.18%      52.310ms         6.44%      80.534ms      44.741us      38.195ms         7.48%      38.195ms      21.219us          1800  \n                         aten::empty_strided         3.46%      43.300ms         3.46%      43.300ms       3.602us       0.000us         0.00%       0.000us       0.000us         12020  \n                                 aten::copy_         2.86%      35.712ms         6.87%      85.921ms      17.184us      56.391ms        11.04%      56.391ms      11.278us          5000  \n                                 aten::empty         2.57%      32.113ms         2.57%      32.113ms       5.247us       0.000us         0.00%       0.000us       0.000us          6120  \nautograd::engine::evaluate_function: torc...         2.37%      29.692ms         7.35%      91.928ms       9.304us       0.000us         0.00%       2.765ms       0.280us          9880  \n                         cudaLaunchKernelExC         2.18%      27.223ms         2.18%      27.223ms       8.897us       0.000us         0.00%       0.000us       0.000us          3060  \n                                   aten::sum         2.10%      26.202ms         3.31%      41.429ms      31.868us      36.622ms         7.17%      36.622ms      28.171us          1300  \n                                 aten::addmm         2.09%      26.143ms         3.23%      40.438ms      61.269us      13.470ms         2.64%      13.470ms      20.410us           660  \n                                   aten::mul         1.98%      24.723ms         3.25%      40.615ms      18.132us      41.651ms         8.15%      41.651ms      18.594us          2240  \n                             cudaMemsetAsync         1.78%      22.207ms         1.78%      22.207ms       5.580us       0.000us         0.00%       0.000us       0.000us          3980  \n                                aten::select         1.72%      21.473ms         2.27%      28.444ms       3.520us       0.000us         0.00%       0.000us       0.000us          8080  \n             torch::autograd::AccumulateGrad         1.57%      19.634ms         4.98%      62.236ms       6.299us       0.000us         0.00%       2.765ms       0.280us          9880  \n                            aten::as_strided         1.47%      18.365ms         1.47%      18.365ms       0.803us       0.000us         0.00%       0.000us       0.000us         22880  \n                                  aten::view         1.42%      17.783ms         1.42%      17.783ms       1.904us       0.000us         0.00%       0.000us       0.000us          9340  \nautograd::engine::evaluate_function: View...         1.40%      17.466ms         5.19%      64.949ms      21.225us       0.000us         0.00%      24.277ms       7.934us          3060  \n                             aten::transpose         1.37%      17.182ms         1.91%      23.826ms       3.264us       0.000us         0.00%       0.000us       0.000us          7300  \n                              cuLaunchKernel         1.36%      16.960ms         1.36%      16.960ms       7.925us       0.000us         0.00%       0.000us       0.000us          2140  \n                                aten::matmul         1.25%      15.575ms        11.45%     143.140ms     127.803us       0.000us         0.00%      77.111ms      68.849us          1120  \n                                  aten::item         1.22%      15.241ms         1.68%      20.948ms       1.051us       0.000us         0.00%     481.637us       0.024us         19940  \n--------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  \nSelf CPU time total: 1.251s\nSelf CUDA time total: 510.843ms\n",
+  "profile_moe8_fused": "--------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  \n                                        Name    Self CPU %      Self CPU   CPU total %     CPU total  CPU time avg     Self CUDA   Self CUDA %    CUDA total  CUDA time avg    # of Calls  \n--------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  \n                            cudaLaunchKernel        13.53%     136.563ms        13.53%     136.563ms       6.918us       0.000us         0.00%       0.000us       0.000us         19740  \n                                   aten::bmm         8.74%      88.270ms        10.25%     103.466ms      64.666us     119.524ms        23.63%     119.524ms      74.702us          1600  \n                                    aten::mm         4.75%      48.003ms         7.39%      74.617ms      41.454us      38.167ms         7.54%      38.167ms      21.204us          1800  \n                                 aten::copy_         3.37%      33.992ms         8.16%      82.380ms      16.476us      56.506ms        11.17%      56.506ms      11.301us          5000  \n                                 aten::empty         3.06%      30.860ms         3.06%      30.860ms       5.059us       0.000us         0.00%       0.000us       0.000us          6100  \n                    Optimizer.step#Adam.step         2.98%      30.076ms         3.56%      35.895ms       1.795ms       0.000us         0.00%       4.083ms     204.158us            20  \nautograd::engine::evaluate_function: torc...         2.58%      26.064ms         7.60%      76.692ms       7.762us       0.000us         0.00%       2.765ms       0.280us          9880  \n                                 aten::addmm         2.51%      25.357ms         3.89%      39.261ms      59.486us      13.459ms         2.66%      13.459ms      20.392us           660  \n                         cudaLaunchKernelExC         2.49%      25.117ms         2.49%      25.117ms       8.208us       0.000us         0.00%       0.000us       0.000us          3060  \n                                   aten::mul         2.35%      23.701ms         3.83%      38.630ms      17.246us      41.882ms         8.28%      41.882ms      18.697us          2240  \n                                   aten::sum         2.34%      23.602ms         3.75%      37.834ms      29.103us      36.706ms         7.26%      36.706ms      28.235us          1300  \n                             cudaMemsetAsync         2.14%      21.598ms         2.14%      21.598ms       5.427us       0.000us         0.00%       0.000us       0.000us          3980  \n                                  aten::view         1.70%      17.186ms         1.70%      17.186ms       1.840us       0.000us         0.00%       0.000us       0.000us          9340  \nautograd::engine::evaluate_function: View...         1.61%      16.294ms         5.92%      59.777ms      19.535us       0.000us         0.00%      24.282ms       7.935us          3060  \n                              cuLaunchKernel         1.57%      15.842ms         1.57%      15.842ms       7.403us       0.000us         0.00%       0.000us       0.000us          2140  \n                            aten::as_strided         1.51%      15.240ms         1.51%      15.240ms       0.666us       0.000us         0.00%       0.000us       0.000us         22880  \n             torch::autograd::AccumulateGrad         1.45%      14.639ms         5.01%      50.628ms       5.124us       0.000us         0.00%       2.765ms       0.280us          9880  \n                             aten::transpose         1.43%      14.413ms         2.08%      20.981ms       2.874us       0.000us         0.00%       0.000us       0.000us          7300  \n                                aten::select         1.41%      14.230ms         1.80%      18.157ms       2.247us       0.000us         0.00%       0.000us       0.000us          8080  \n                             cudaMemcpyAsync         1.40%      14.104ms         1.42%      14.386ms      12.619us       0.000us         0.00%       0.000us       0.000us          1140  \n                                aten::matmul         1.30%      13.124ms        13.01%     131.359ms     117.285us       0.000us         0.00%      77.079ms      68.820us          1120  \n                               aten::baddbmm         1.14%      11.519ms         1.91%      19.326ms      60.394us      36.116ms         7.14%      45.838ms     143.243us           320  \n--------------------------------------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  ------------  \nSelf CPU time total: 1.010s\nSelf CUDA time total: 505.863ms\n"
+}
