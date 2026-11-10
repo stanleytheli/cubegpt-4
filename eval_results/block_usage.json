@@ -1,0 +1,194 @@
+{
+ "CubeGPT-3.1": {
+  "bce": 0.10629460215568542,
+  "total_params": 19085973,
+  "blocks": [
+   {
+    "layer": 0,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 23.53049285675233
+   },
+   {
+    "layer": 0,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": -0.005852822883067876
+   },
+   {
+    "layer": 1,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 520.8504046508564
+   },
+   {
+    "layer": 1,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 5.948010110313451
+   },
+   {
+    "layer": 2,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 577.7006466843584
+   },
+   {
+    "layer": 2,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 92.91734131840619
+   },
+   {
+    "layer": 3,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 250.97044709959331
+   },
+   {
+    "layer": 3,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 66.85901776314222
+   },
+   {
+    "layer": 4,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 136.2180530497062
+   },
+   {
+    "layer": 4,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 67.32857537384469
+   },
+   {
+    "layer": 5,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 83.96301296312652
+   },
+   {
+    "layer": 5,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 0.6560418655574995
+   },
+   {
+    "layer": 6,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 62.92238806388619
+   },
+   {
+    "layer": 6,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 3.927412379386297
+   },
+   {
+    "layer": 7,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 258.50063995536436
+   },
+   {
+    "layer": 7,
+    "kind": "ffn",
+    "params": 2104656,
+    "mean_ablate_pct": 593.5230909633817
+   }
+  ]
+ },
+ "CubeGPT-4": {
+  "bce": 0.09743092209100723,
+  "total_params": 3824999,
+  "blocks": [
+   {
+    "layer": 0,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 342.16225533203175
+   },
+   {
+    "layer": 1,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 260.26702542495167
+   },
+   {
+    "layer": 2,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 138.06774007133308
+   },
+   {
+    "layer": 3,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 124.06283051936317
+   },
+   {
+    "layer": 4,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 57.0395926208215
+   },
+   {
+    "layer": 5,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 158.0266953542785
+   },
+   {
+    "layer": 6,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 74.95070145141565
+   },
+   {
+    "layer": 7,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 252.1673429070693
+   },
+   {
+    "layer": 8,
+    "kind": "ffn",
+    "params": 262826,
+    "mean_ablate_pct": 309.3352910772743
+   },
+   {
+    "layer": 9,
+    "kind": "ffn",
+    "params": 262826,
+    "mean_ablate_pct": 44.149376647793524
+   },
+   {
+    "layer": 10,
+    "kind": "ffn",
+    "params": 262826,
+    "mean_ablate_pct": 75.09695871906592
+   },
+   {
+    "layer": 11,
+    "kind": "ffn",
+    "params": 262826,
+    "mean_ablate_pct": 117.1358673122501
+   },
+   {
+    "layer": 12,
+    "kind": "attention",
+    "params": 263168,
+    "mean_ablate_pct": 327.59746017364745
+   },
+   {
+    "layer": 13,
+    "kind": "ffn",
+    "params": 262826,
+    "mean_ablate_pct": 895.5174739811409
+   }
+  ]
+ }
+}
