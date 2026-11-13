@@ -99,19 +99,32 @@ SOLVES = {
     "CubeGPT-4": (C4, ["a8f4a1f1-branch230m-to-1b-final_20261110-055921", "a8f4a1f1-branch230m-to-1b-final_20261110-055923",
                        "a8f4a1f1-branch230m-to-1b-final_20261110-055925"]),
 }
+# CubeGPT-4 with de-duping and width scheduling: each run is placed at the flat width whose compute it matches
+IMPROVED = ["a8f4a1f1-branch230m-to-1b-final-ws6000x11-3000-1500-750-500-dedupe_20261112-130254",
+            "a8f4a1f1-branch230m-to-1b-final-ws32000x10-4000-1000-250-100-dedupe_20261112-141222",
+            "a8f4a1f1-branch230m-to-1b-final-ws128000x8-64000x2-8000-1000-100-dedupe_20261112-143244"]
+optimal = json.load(open(ROOT / "eval_results" / "optimal_seed0.json"))["mean_optimal"]      # exact, from vcube
 fig, ax = chart("Solution length against beam width", "beam width (log scale)", "mean solution length (moves)")
 series = [("CubeGPT-3", C3, [20.2, 19.6, 19.0])]      # CubeGPT-3-8A1-t100mPFT, from the README solving table
 for name, (color, files) in SOLVES.items():
     series.append((name, color, [json.load(open(ROOT / "eval_results" / f"{f}.json"))["solve_summary"][str(w)]["mean_moves"]
                                  for f, w in zip(files, WIDTHS)]))
-for name, color, ms in series:
+series.append(("CubeGPT-4 + optimized search", PURPLE,
+               [next(iter(json.load(open(ROOT / "eval_results" / f"{f}.json"))["solve_summary"].values()))["mean_moves"]
+                for f in IMPROVED]))
+for k, (name, color, ms) in enumerate(series):
     ax.plot(WIDTHS, ms, color=color, lw=2.4, marker="o", ms=9, mec=SURFACE, mew=1.6, label=name)
     for w, m in zip(WIDTHS, ms):
-        ax.annotate(f"{m:.1f}" if name == "CubeGPT-3" else f"{m:.2f}", (w, m),
-                    (0, -17 if name == "CubeGPT-4" else 10), textcoords="offset points", ha="center", fontsize=9.5, color=INK)
-ax.axhline(OPTIMAL, color=INK2, lw=1.1, ls=(0, (2, 3)), label=f"optimal (≈ {OPTIMAL})")
+        text = f"{m:.1f}" if name == "CubeGPT-3" else f"{m:.2f}"
+        if w == WIDTHS[-1] and k > 0:         # the last points sit close together: label them to the right
+            ax.annotate(text, (w, m), (13, (7, 0, -7)[k - 1]), textcoords="offset points", ha="left", va="center",
+                        fontsize=9.5, color=INK)
+        else:
+            ax.annotate(text, (w, m), (0, -17 if k == 3 else 10), textcoords="offset points", ha="center",
+                        fontsize=9.5, color=INK)
+ax.axhline(optimal, color=INK2, lw=1.1, ls=(0, (2, 3)), label=f"optimal ({optimal:.2f} on these scrambles)")
 ax.set_xscale("log", base=2); ax.set_xticks(WIDTHS); ax.set_xticklabels([f"{w:,}" for w in WIDTHS]); ax.minorticks_off()
-ax.set_xlim(3200, 80000); ax.set_ylim(17.4, 20.6); ax.grid(False, axis="x")
+ax.set_xlim(3200, 96000); ax.set_ylim(17.4, 20.6); ax.grid(False, axis="x")
 finish(fig, ax, "width_scaling.png", loc="upper right")
 
 

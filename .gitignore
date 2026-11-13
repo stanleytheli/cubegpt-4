@@ -5,3 +5,4 @@ __pycache__/
 runs/
 issue_export/
 .DS_Store
+eval_results/*.beams/

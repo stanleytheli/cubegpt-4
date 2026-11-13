@@ -38,6 +38,16 @@ Evaluate (MSE / within-k accuracy, and optional beam-search solving split over N
     Results are printed and written to eval_results/*.json, locally and in the volume.
     Add --detach (modal run --detach modal_app.py::evaluate ...) for long solve evals:
     they then finish even if your computer goes off; fetch the JSON from the volume after.
+    Add --save-beam to also record the whole beam search of every cube (ranks in the JSON,
+    full beams in the volume at eval_results/<name>.beams/; about 0.5 MB per cube at width 4000).
+    Add --dedupe to keep one copy of each cube state per beam step (U D and D U reach the
+    same state; without this about half of a width-4000 beam is such copies).
+    Add --width-schedule 6000x11,3000,1500,750,500 for a beam that is 6000 wide through move 11
+    and then shrinks (the last width repeats); results are filed under the largest width.
+    Add --score-mix 0.1 to rank by 0.9 * model(state) + 0.1 * mean of the model's predictions
+    for its parent and all the parent's children (score mixing).
+    Add --parent-alpha 0.1 to rank beam entries by an exponential mean of the predictions
+    along their path: rating = 0.9 * model(state) + 0.1 * rating(parent).
     Every solved cube is saved to the volume as it finishes; if an eval dies anyway:
     modal run modal_app.py::collect_eval --out-name <name printed at launch>
 
@@ -256,7 +266,9 @@ def train(config: str, name: str = "", resume: bool = False, overrides: str = ""
 def evaluate(run: str = "", which: str = "final", checkpoint: str = "", model_config: str = "",
              gpu: str = "H100", metrics_samples: int = 262144, solve_cubes: int = 0, widths: str = "4000",
              scramble_moves: int = 30, max_moves: int = 30, seed: int = 0, shards: int = 1,
-             eval_batch_size: int = 16384, tf32: bool = True):
+             eval_batch_size: int = 16384, tf32: bool = True, save_beam: bool = False,
+             parent_alpha: float = 0.0, dedupe: bool = False, width_schedule: str = "",
+             score_mix: float = 0.0):
     """Evaluate a run (--run, --which final|latest|<path in run dir>) or any checkpoint in
     the volume (--checkpoint + --model-config <toml with a [model] table>)."""
     from cubegpt import config as C
@@ -273,6 +285,16 @@ def evaluate(run: str = "", which: str = "final", checkpoint: str = "", model_co
         _die("--widths must be positive")
     if shards < 1:
         _die("--shards must be >= 1")
+    schedule = None
+    if width_schedule:                     # "6000x11,3000,1500,750,500": width after each move, last repeats
+        try:
+            schedule = [int(w) for part in width_schedule.split(",")
+                        for w in [part.split("x")[0]] * (int(part.split("x")[1]) if "x" in part else 1)]
+        except (ValueError, IndexError):
+            _die(f"--width-schedule must look like 6000x11,3000,1500,750,500, got {width_schedule!r}")
+        if not schedule or min(schedule) <= 0:
+            _die("--width-schedule widths must be positive")
+        width_list = [max(schedule)]       # label only; the search follows the schedule
 
     if run:
         stored = _vol_json(f"runs/{run}/config.json")
@@ -296,7 +318,16 @@ def evaluate(run: str = "", which: str = "final", checkpoint: str = "", model_co
     n_shards = max(1, min(shards, solve_cubes)) if solve_cubes else 1
     spec = {"checkpoint": checkpoint, "model": model, "metrics_samples": metrics_samples,
             "solve_cubes": solve_cubes, "widths": width_list, "scramble_moves": scramble_moves,
-            "max_moves": max_moves, "seed": seed, "eval_batch_size": eval_batch_size, "tf32": tf32}
+            "max_moves": max_moves, "seed": seed, "eval_batch_size": eval_batch_size, "tf32": tf32,
+            "save_beam": save_beam, "parent_alpha": parent_alpha, "dedupe": dedupe, "width_schedule": schedule, "mix_alpha": score_mix}
+    if score_mix:
+        label += f"-mix{score_mix:g}"
+    if schedule:
+        label += "-ws" + width_schedule.replace(",", "-")
+    if dedupe:
+        label += "-dedupe"
+    if parent_alpha:
+        label += f"-pa{parent_alpha:g}"
     print(f"evaluating {checkpoint} on {n_shards} x {gpu}: metrics on {metrics_samples} samples, "
           f"{solve_cubes} cubes x widths {width_list}")
     out_name = f"{label}_{datetime.now().strftime('%Y%m%d-%H%M%S')}"

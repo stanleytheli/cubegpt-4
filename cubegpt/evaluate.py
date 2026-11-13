@@ -121,19 +121,54 @@ def make_model_scorer(T, model, canonical=True, full=True, eval_batch_size=16384
 
 
 def _reconstruct(history_moves, history_parents, b, m):
-    moves = [int(m)]
+    """Moves of the path ending with move m from beam entry b, and that path's beam index
+    after each earlier step (0 = best score in the beam, since top-k comes back sorted)."""
+    moves, path = [int(m)], []
     idx = int(b)
     for L in range(len(history_moves) - 1, -1, -1):
+        path.insert(0, idx)
         moves.insert(0, int(history_moves[L][idx]))
         idx = int(history_parents[L][idx])
-    return moves
+    return moves, path
 
 
 @torch.no_grad()
 def beam_search_gpu(T, model, start, width=100, max_moves=30, scorer=None, canonical=True,
-                    full=True, eval_batch_size=16384):
+                    full=True, eval_batch_size=16384, trace=None, parent_alpha=0.0, dedupe=False,
+                    stats=None, mix_alpha=0.0):
     """Returns (success, list_of_move_names_or_None). `start` is a cube string
-    or a (54,) state tensor."""
+    or a (54,) state tensor.
+
+    width: an int, or a list giving the beam width after each move (the last entry repeats),
+    e.g. [6000] * 11 + [3000, 1500, 750, 500] keeps 6000 through move 11 and then shrinks.
+
+    parent_alpha: beam entries are ranked by
+        rating(x) = (1 - parent_alpha) * model(x) + parent_alpha * rating(parent(x)),
+    an exponential mean of the predictions along the path (rating(start) = model(start)).
+    0 ranks by the model's prediction for the state alone.
+
+    mix_alpha ("score mixing"): beam entries are ranked by
+        (1 - mix_alpha) * model(x) + mix_alpha * mean(model(parent), model(every legal child of parent)),
+    so a state is pulled toward the average prediction of its family (itself included). The
+    family term is the same for all siblings: it moves whole families against each other.
+    Uses plain model predictions (no recursion); not combined with parent_alpha.
+
+    dedupe: when several children of a step are the same cube state (reached by different
+    move orders, e.g. U D and D U), keep only the first one (the one from the best-ranked
+    parent) and do not score the others. Without it the copies all compete for beam slots.
+    stats: with dedupe, pass an empty dict to get per-step counts: stats["children"] (children
+    allowed by the move rules) and stats["distinct"] (distinct states among them).
+
+    trace: pass an empty dict to record the whole search. It is filled with
+      sizes[L]    beam size after step L+1 (L = 0 is the first move)
+      n_valid[L]  candidates scored at that step (children that pass the move rules)
+      parents, moves, scores   the kept beam of every step, concatenated in step order
+                  (split with sizes): each entry's parent index in the previous beam,
+                  the move that made it, and its rating (the predicted distance when
+                  parent_alpha is 0). Entries are sorted
+                  by score, so an entry's position in its step is its rank (0 = best).
+      path        the solution's beam index after each step but the last (when solved)
+    Beam states are not stored: replay `moves` along `parents` from the start state."""
     dev = T.device
     if scorer is None:
         model.eval()
@@ -150,14 +185,19 @@ def beam_search_gpu(T, model, start, width=100, max_moves=30, scorer=None, canon
     prev_axis = torch.full((1,), -1, dtype=torch.int64, device=dev)
     prev2_axis = torch.full((1,), -2, dtype=torch.int64, device=dev)
     history_parents, history_moves = [], []
+    if parent_alpha and mix_alpha:
+        raise ValueError("use parent_alpha or mix_alpha, not both")
+    rating = scorer(frontier).float() if (parent_alpha or mix_alpha) else None   # mix: plain model score
 
-    for _ in range(max_moves):
+    for step in range(max_moves):
+        step_width = width if isinstance(width, int) else width[min(step, len(width) - 1)]
         B = frontier.shape[0]
         children = frontier[:, MOVE18]                                   # (B, 18, 54)
         is_solved = (children == SOLVED).all(dim=2)
         if is_solved.any():
             flat = int(is_solved.reshape(-1).nonzero(as_tuple=False)[0].item())
-            moves = _reconstruct(history_moves, history_parents, flat // 18, flat % 18)
+            moves, path = _reconstruct(history_moves, history_parents, flat // 18, flat % 18)
+            _finish_trace(trace, history_parents, history_moves, path)
             return True, [T.MOVE_NAMES[m] for m in moves]
 
         banned = MOVE_FACE.unsqueeze(0) == prev_face.unsqueeze(1)
@@ -165,19 +205,81 @@ def beam_search_gpu(T, model, start, width=100, max_moves=30, scorer=None, canon
         valid = ~banned
 
         child_flat = children.reshape(B * 18, 54)
-        scores = scorer(child_flat).masked_fill(~valid.reshape(-1), float("inf"))
-        k = min(width, int(valid.sum().item()))
-        _, top_idx = torch.topk(scores, k, largest=False)
+        plain = None                                    # plain model score of every legal child (mix only)
+        if dedupe:
+            cand, valid_idx, rep = _first_of_each_state(child_flat, valid.reshape(-1))   # indices into child_flat
+            scores = torch.full((B * 18,), float("inf"), device=dev)
+            cand_scores = scorer(child_flat[cand]).float()
+            if mix_alpha:
+                plain = torch.zeros(B * 18, device=dev)
+                plain[valid_idx] = cand_scores[rep]      # a repeated state gets the score of its kept copy
+                cand_scores = (1 - mix_alpha) * cand_scores + mix_alpha * _family_mean(plain, valid, rating)[cand // 18]
+            if parent_alpha:
+                cand_scores = (1 - parent_alpha) * cand_scores + parent_alpha * rating[cand // 18]
+            scores[cand] = cand_scores
+            n_candidates = int(cand.numel())
+            if stats is not None:
+                stats.setdefault("children", []).append(int(valid.sum().item()))
+                stats.setdefault("distinct", []).append(n_candidates)
+        else:
+            scores = scorer(child_flat)
+            if mix_alpha:
+                plain = scores.float().masked_fill(~valid.reshape(-1), 0.0)
+                scores = (1 - mix_alpha) * scores + mix_alpha * _family_mean(plain, valid, rating).repeat_interleave(18)
+            if parent_alpha:
+                scores = (1 - parent_alpha) * scores + parent_alpha * rating.repeat_interleave(18)
+            scores = scores.masked_fill(~valid.reshape(-1), float("inf"))
+            n_candidates = int(valid.sum().item())
+        k = min(step_width, n_candidates)
+        top_scores, top_idx = torch.topk(scores, k, largest=False)
+        if trace is not None:
+            trace.setdefault("n_valid", []).append(n_candidates)
+            trace.setdefault("scores", []).append(top_scores.float().cpu().numpy())
         parent_idx = top_idx // 18
         move_id = top_idx % 18
 
         frontier = child_flat[top_idx]
+        rating = plain[top_idx] if mix_alpha else top_scores
         prev2_axis = prev_axis[parent_idx]
         prev_axis = MOVE_AXIS[move_id]
         prev_face = MOVE_FACE[move_id]
         history_parents.append(parent_idx)
         history_moves.append(move_id)
+    _finish_trace(trace, history_parents, history_moves, None)
     return False, None
+
+
+def _first_of_each_state(child_flat, valid):
+    """Indices of the valid children, keeping only the first (lowest index) copy of each
+    distinct cube state. Exact: each state (54 facelets, 6 colors) is packed into 3 int64s."""
+    idx = valid.nonzero(as_tuple=False).squeeze(1)
+    shifts = 3 * torch.arange(18, device=child_flat.device)
+    packed = (child_flat[idx].long().view(-1, 3, 18) << shifts).sum(dim=2)          # (n, 3)
+    _, inverse = torch.unique(packed, dim=0, return_inverse=True)
+    first = torch.full((int(inverse.max().item()) + 1,), idx.numel(), dtype=torch.long, device=idx.device)
+    first.scatter_reduce_(0, inverse, torch.arange(idx.numel(), device=idx.device), reduce="amin")
+    order = torch.sort(first)                       # kept copies, in child order
+    position = torch.empty_like(first)
+    position[order.indices] = torch.arange(first.numel(), device=idx.device)
+    return idx[order.values], idx, position[inverse]   # kept, all valid, and each valid child's kept copy
+
+
+def _family_mean(plain, valid, parent_scores):
+    """(B,) mean model score over each parent and its legal children. plain: (B*18,) child scores,
+    0 where a move is not allowed; valid: (B, 18)."""
+    return (parent_scores + plain.view(-1, 18).sum(dim=1)) / (1 + valid.sum(dim=1))
+
+
+def _finish_trace(trace, history_parents, history_moves, path):
+    if trace is None:
+        return
+    cat = lambda xs, dtype: (np.concatenate(xs) if xs else np.zeros(0)).astype(dtype)  # noqa: E731
+    trace["sizes"] = np.array([len(p) for p in history_parents], dtype=np.int32)
+    trace["n_valid"] = np.array(trace.get("n_valid", [])[:len(history_parents)], dtype=np.int32)
+    trace["parents"] = cat([p.cpu().numpy() for p in history_parents], np.int32)
+    trace["moves"] = cat([m.cpu().numpy() for m in history_moves], np.uint8)
+    trace["scores"] = cat(trace.get("scores", [])[:len(history_parents)], np.float32)
+    trace["path"] = np.array(path if path is not None else [], dtype=np.int32)
 
 
 def scramble_for(seed, idx, n_moves):
@@ -197,9 +299,16 @@ def verify_solution(start_string, move_names):
 
 
 def solve_cubes(T, model, idxs, widths, scramble_moves=30, max_moves=30, seed=0,
-                eval_batch_size=16384, log=print, done=None, on_result=None):
+                eval_batch_size=16384, log=print, done=None, on_result=None, beam_dir=None, parent_alpha=0.0,
+                dedupe=False, width_schedule=None, mix_alpha=0.0):
     """done: {(idx, width): result} already solved (skipped, returned as-is);
-    on_result(result) is called after each new cube (used to persist progress)."""
+    on_result(result) is called after each new cube (used to persist progress).
+    beam_dir: if given, the whole search of every cube is saved there as
+    w<width>_cube<idx>.npz (see beam_search_gpu's `trace`), and each result gets
+    'ranks' (the solution's 1-based rank in the beam after each step but the last)
+    and 'beam_sizes'.
+    width_schedule: per-move beam widths (see beam_search_gpu) used instead of the flat width;
+    `widths` must then hold one value, which is only the label the results are filed under."""
     done = done or {}
     results = []
     for width in widths:
@@ -209,13 +318,24 @@ def solve_cubes(T, model, idxs, widths, scramble_moves=30, max_moves=30, seed=0,
                 continue
             start = scramble_for(seed, idx, scramble_moves)
             t0 = time.time()
-            ok, moves = beam_search_gpu(T, model, start, width=width, max_moves=max_moves,
-                                        eval_batch_size=eval_batch_size)
+            trace = {} if beam_dir is not None else None
+            stats = {} if dedupe else None
+            ok, moves = beam_search_gpu(T, model, start, width=width_schedule or width, max_moves=max_moves,
+                                        eval_batch_size=eval_batch_size, trace=trace,
+                                        parent_alpha=parent_alpha, dedupe=dedupe, stats=stats,
+                                        mix_alpha=mix_alpha)
             dt = time.time() - t0
             if ok and not verify_solution(start, moves):
                 raise AssertionError(f"beam search returned an invalid solution for cube {idx}")
             results.append({"idx": idx, "width": width, "scramble": start, "solved": ok,
                             "n_moves": len(moves) if ok else None, "moves": moves, "seconds": dt})
+            if stats:
+                results[-1]["children"], results[-1]["distinct_children"] = stats["children"], stats["distinct"]
+            if trace is not None:
+                results[-1]["ranks"] = [int(i) + 1 for i in trace["path"]]
+                results[-1]["beam_sizes"] = [int(n) for n in trace["sizes"]]
+                np.savez_compressed(beam_dir / f"w{width}_cube{idx:04d}.npz", scramble=start,
+                                    solution=" ".join(moves or []), width=width, **trace)
             log(f"  width {width} cube {idx}: " + (f"solved in {len(moves)} moves" if ok else "NOT solved")
                 + f" ({dt:.1f}s)")
             if on_result is not None:
@@ -300,10 +420,18 @@ def run_eval_shard(spec, vol_root, shard=0, n_shards=1, device=None, commit=None
                 fh.write(json.dumps(r) + "\n")
             persist()
 
+    beam_dir = None
+    if spec.get("save_beam") and spec.get("out_name"):
+        beam_dir = Path(vol_root) / "eval_results" / f"{spec['out_name']}.beams"
+        beam_dir.mkdir(parents=True, exist_ok=True)
     idxs = list(range(shard, spec.get("solve_cubes", 0), n_shards))
     if idxs:
         out["solves"] = solve_cubes(T, model, idxs, spec["widths"], spec["scramble_moves"], spec["max_moves"],
-                                    spec["seed"], spec["eval_batch_size"], log=log, done=done, on_result=save)
+                                    spec["seed"], spec["eval_batch_size"], log=log, done=done, on_result=save,
+                                    beam_dir=beam_dir, parent_alpha=spec.get("parent_alpha", 0.0),
+                                    dedupe=spec.get("dedupe", False),
+                                    width_schedule=spec.get("width_schedule"),
+                                    mix_alpha=spec.get("mix_alpha", 0.0))
     return out
 
 

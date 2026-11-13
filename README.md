@@ -11,7 +11,7 @@ Solving Rubikâ€™s Cubes is hard! There are on the order of 10^19 possible Rubikâ
 
 All 3D renders in this project made using a 3D renderer I built, by hand.
 
-So does the AI work? Yes! For instance, it finds the following 18-move solution to the cube pictured above:
+So does the AI work? Yes! We're able to achieve a model that beats cubes in, on average, **18.00** moves, less than a quarter of a move worse than the theoretical optimal. With faster search, we can solve most cubes in under 4 seconds with average length **18.56** moves. For instance, we find the following 18-move solution to the cube pictured above:
 
 https://github.com/user-attachments/assets/dd51b826-f864-45e7-99cc-ccca08a05a2e
 
@@ -81,30 +81,65 @@ The result is a model with a fifth of the parameters of CubeGPT-3.1 that is bett
 |CubeGPT-4-t1b | 1,152 | **2.68** | **90.22%** | **96.30%** | **53.84%**
 
 
-
 ## Solving
 
-To solve a cube we run a beam search guided by the model's distance estimates, keeping the best `width` states at every step. MAO is "moves above optimal": the average solution length minus the average optimal solution length (about 17.7).
+To solve a cube we run a beam search guided by the model's distance estimates, keeping the best `width` states at every step. MAO is "moves above optimal": the average solution length minus the average optimal solution length. For CubeGPT-3.1 and CubeGPT-4, we get optimal data from running the [vcube](https://github.com/Voltara/vcube) solver, giving an average of 17.745. The test set for width 64000 is smaller and gave an average of 17.78. The older rows use the usual estimate of 17.7.
 
 |Model| Width | Solve Rate | Average Moves | MAO |
 | ---| --- | --- | --- | --- |
-|CubeGPT-2g-PFT| 4000 | 99% | 21.1 | 3.4 |
-|CubeGPT-3-8A1-t300m| 4000 | 100% | 20.3 | 2.6 |
-|CubeGPT-3-8A1-t100mPFT| 4000 | 99% | 20.2 | 2.5 |
-|CubeGPT-3-8A1-t100mPFT| 16000 | 100% | 19.6 | 1.9 |
-|CubeGPT-3-8A1-t100mPFT| 64000 | 100% | 19.0 | 1.3 |
-|CubeGPT-3-1-t300m| 4000 | 100% | 19.13 | 1.43 |
-|CubeGPT-3-1-t300m| 16000 | 100% | 18.62 | 0.92 |
-|CubeGPT-3-1-t300m| 64000 | 100% | 18.23 | 0.53 |
-|CubeGPT-4-t1b| 4000 | 100% | **18.78** | **1.08** |
-|CubeGPT-4-t1b| 16000 | 100% | **18.35** | **0.65** |
-|CubeGPT-4-t1b| 64000 | 100% | **18.15** | **0.45** |
+|CubeGPT-2| 4000 | 99% | 21.1 | 3.4 |
+|CubeGPT-3| 4000 | 99% | 20.2 | 2.5 |
+|CubeGPT-3| 16000 | 100% | 19.6 | 1.9 |
+|CubeGPT-3| 64000 | 100% | 19.0 | 1.3 |
+|CubeGPT-3.1| 4000 | 100% | 19.13 | 1.38 |
+|CubeGPT-3.1| 16000 | 100% | 18.62 | 0.88 |
+|CubeGPT-3.1| 64000 | 100% | 18.23 | 0.45 |
+|CubeGPT-4| 4000 | 100% | 18.78 | 1.04 |
+|CubeGPT-4| 16000 | 100% |18.35 | 0.60 |
+|CubeGPT-4| 64000 | 100% | 18.15 | 0.37 |
 
 The CubeGPT-3.1 and CubeGPT-4 rows use the same 200 random scrambles (100 at width 64000). The CubeGPT-2 and CubeGPT-3 rows are from earlier runs on different scrambles.
 
 ![](images/readme/width_scaling.png)
 
 Better models bring significant gains. CubeGPT-4 at width 4000 outperforms CubeGPT-3 at width 64000, CubeGPT-4. At width 4000, CubeGPT-4 takes less than five seconds per solve. Scaling is also buying less and less, even on the log scale, because we are bumping up against the theoretical optimal average of 17.7. Earlier models failed to solve small numbers of cubes; the new models are more reliable and do not fail to solve in our experiments.
+
+How calibrated are our models? Measured against our best found solutions, CubeGPT-4 comes out clearly ahead in RMS error. Perhaps surprisingly or not, difficulty is not monotonic; it is hardest to tell around move 14. 
+
+![](images/readme/rmse_by_distance.png)
+
+
+### Optimized beam search
+
+The plain beam search algorithm can be significantly optimized upon to get us much more efficient solutions. 
+
+![](images/readme/beam_rank.png)
+
+This is a graph of the rank of the final solution versus the progress into the solution. A few moves in, most solutions are under rank 1000, meaning the model recognizes them as top 25% candidates. But a lot are also in the upper end, some reaching dangerously close to 4000 (which would get them cut out). This happens mostly within the first 10-12 moves; after that, a lot of width is being *wasted* when the network has already identified the solution and ranks it in the top 10-100. This motivates our optimizations:
+
+**Width scheduling.** We widen the early steps and thin down the later steps. This keeps total compute essentially constant (or faster), and gives more room for solutions to not be cut out early. 
+
+**De-duplication.** Different move orders often reach the same cube state: `U D` and `D U`, for example. We remove these to allow more room for unique states. This also makes it much faster because less redundant model calls are made.
+
+
+|Effective width| Search | Average Moves | MAO | Solved Optimally | Optimal + 1 | Seconds per Solve |
+| --- | --- | --- | --- | --- | --- | --- |
+| 4000 | Plain | 18.78 | 1.04 | 33.0% | 36.0% | 4.6 |
+| 4000 | Optimized | **18.56** | **0.82** | **40.0%** | 40.5% | **3.6** |
+| 16000 | Plain | 18.35 | 0.60 | 51.0% | 38.5% | 16.6 |
+| 16000 | Optimized | **18.15** | **0.41** | **65.0%** | 29.5% | **13.4** |
+| 64000 | Plain | 18.15 | 0.37 | 66.0% | 31.0% | 63.9 |
+| 64000 | Optimized | **18.00** | **0.22** | **80.0%** | 18.0% | **40.0** |
+
+The optimized rows are de-duplicated and use these width schedules (beam width after each move):
+
+|Compute (same as flat width)| Moves 1-8 | Moves 9-10 | Move 11 | Move 12 | Move 13 | Move 14 | Moves 15+ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 4000 | 6000 | 6000 | 6000 | 3000 | 1500 | 750 | 500 |
+| 16000 | 32000 | 32000 | 4000 | 1000 | 250 | 100 | 100 |
+| 64000 | 128000 | 64000 | 8000 | 1000 | 100 | 100 | 100 |
+
+Optimized beam search is significantly better: at effective width 16000, it beats plain beam search at width 64000. Improvements are consistent across effective widths. In fact, across our test set, they have only improved solutions and never degraded them, which we take as a moderately strong sign of robust improvement.
 
 ## More Solve Videos
 
