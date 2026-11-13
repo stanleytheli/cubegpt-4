@@ -7,13 +7,11 @@ A research report about approaching optimality.
 
 Solving Rubik’s Cubes is hard! There are on the order of 10^19 possible Rubik’s Cube states, and only one winning state. Any standard algorithms like A* search, which explore a significant fraction of possible states, are rendered useless. We have to prune trees extremely aggressively, which is where an estimator trained via machine learning comes in.
 
-![](images/scrambled_to_solved.png)
+https://github.com/user-attachments/assets/11d65675-f1da-4a33-9670-15d962b7a386
 
-All 3D renders in this project made using a 3D renderer I built, by hand.
+So does the AI work? Yes! We're able to achieve a model that beats cubes in, on average, **18.00** moves, less than a quarter of a move worse than the theoretical optimal. With faster search, we can solve most cubes in under 4 seconds with average length **18.56** moves. 
 
-So does the AI work? Yes! We're able to achieve a model that beats cubes in, on average, **18.00** moves, less than a quarter of a move worse than the theoretical optimal. With faster search, we can solve most cubes in under 4 seconds with average length **18.56** moves. For instance, we find the following 18-move solution to the cube pictured above:
-
-https://github.com/user-attachments/assets/dd51b826-f864-45e7-99cc-ccca08a05a2e
+https://github.com/user-attachments/assets/dec1678b-9dfd-43b1-b308-2db92b75032a
 
 ### Previous Work
 
@@ -149,10 +147,10 @@ Optimized beam search is significantly better: at effective width 16000, it beat
 | 64000 | Plain | 18.15 | 0.37 | 66.0% | 31.0% | 63.9 |
 | 64000 | Optimized | **18.00** | **0.22** | **80.0%** | 18.0% | **40.0** |
 
-
+Our models are approaching optimality. With less than 4 seconds of search, we are optimal 40% of the time and within 1 move of optimal 80%. With 40 seconds of search, we are optimal 80% of the time and within 1 move of optimal 98%. 
 
 ## More Solve Videos
 
-https://github.com/user-attachments/assets/d71554ae-2c3d-4c95-9c00-17c6c1f9edbc
+https://github.com/user-attachments/assets/11852e10-dcf8-46cf-834f-4310f91a1378
 
-https://github.com/user-attachments/assets/bf7bce2e-1663-4972-af68-6b5380861241
+https://github.com/user-attachments/assets/5a294b09-61b6-42ef-839e-f9450f000fe7

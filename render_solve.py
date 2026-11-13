@@ -185,9 +185,9 @@ def make_background(width, height):
 
 
 class Scene:
-    def __init__(self, scramble, moves, width, height, title, subtitle):
+    def __init__(self, scramble, moves, width, height, title, subtitle, label="moves"):
         self.moves, self.width, self.height = moves, width, height
-        self.title, self.subtitle = title, subtitle
+        self.title, self.subtitle, self.label = title, subtitle, label
         self.states = [scramble]
         for move in moves:
             self.states.append(rotate_string(self.states[-1], move))
@@ -198,7 +198,9 @@ class Scene:
         self.f_title = _font(SANS_BOLD, int(46 * unit))
         self.f_sub = _font(SANS, int(27 * unit))
         self.f_count = _font(SANS_BOLD, int(46 * unit))
-        cell = min(62 * unit, (width - 80 * unit) / max(1, len(moves)))
+        self.rows = 1 if len(moves) <= 22 else 2                 # long sequences wrap onto two rows
+        self.per_row = math.ceil(len(moves) / self.rows)
+        cell = min(62 * unit, (width - 80 * unit) / max(1, self.per_row))
         self.cell = cell
         self.f_move = _font(MONO_BOLD, int(cell * 0.44))
 
@@ -215,12 +217,15 @@ class Scene:
             draw.text((margin, margin + 58 * unit), self.subtitle, font=self.f_sub, fill=INK_DIM)
         count = f"{done} / {len(self.moves)}"
         draw.text((self.width - margin, margin), count, font=self.f_count, fill=INK, anchor="ra")
-        draw.text((self.width - margin, margin + 58 * unit), "moves", font=self.f_sub, fill=INK_DIM, anchor="ra")
+        draw.text((self.width - margin, margin + 58 * unit), self.label, font=self.f_sub, fill=INK_DIM, anchor="ra")
 
-        cell, y = self.cell, self.height - 92 * unit
-        x0 = (self.width - cell * len(self.moves)) / 2
+        cell = self.cell
+        bottom = self.height - (92 if self.rows == 1 else 66) * unit
         for k, move in enumerate(self.moves):
-            cx = x0 + cell * (k + 0.5)
+            row, col = divmod(k, self.per_row)
+            in_row = min(self.per_row, len(self.moves) - row * self.per_row)
+            cx = (self.width - cell * in_row) / 2 + cell * (col + 0.5)
+            y = bottom - (self.rows - 1 - row) * cell * 0.92
             current = turn is not None and k == done
             if current:
                 draw.rounded_rectangle((cx - cell * 0.46, y - cell * 0.42, cx + cell * 0.46, y + cell * 0.42),
@@ -239,8 +244,8 @@ def ease(t):
     return (math.tanh(EASE_A * (t - 0.5)) - f0) / (f1 - f0)
 
 
-def timeline(scene, fps, turn_seconds, intro=1.0, outro_spin=2.6, outro_hold=1.2):
-    """Yields (done, turn_progress, spin) for every frame."""
+def timeline(scene, fps, turn_seconds, intro=1.0, outro_spin=2.6, outro_hold=1.2, gap=0.07):
+    """Yields (done, turn_progress, spin) for every frame. outro_spin=0 skips the final spin."""
     n = len(scene.moves)
     for _ in range(round(intro * fps)):
         yield 0, None, 0.0
@@ -249,7 +254,7 @@ def timeline(scene, fps, turn_seconds, intro=1.0, outro_spin=2.6, outro_hold=1.2
         frames = max(2, round(seconds * fps))
         for i in range(frames):
             yield k, ease((i + 1) / frames), 0.0
-        for _ in range(round(0.07 * fps)):
+        for _ in range(round(gap * fps)):
             yield k + 1, None, 0.0
     for _ in range(round(0.4 * fps)):
         yield n, None, 0.0
@@ -366,6 +371,11 @@ def main():
     ap.add_argument("--scramble", help="54-character cube string (instead of an eval file)")
     ap.add_argument("--moves", help="space-separated solution, with --scramble")
     ap.add_argument("--out", default="solve.mp4", help=".mp4, .gif, or .png (with --still)")
+    ap.add_argument("--show-scramble", action="store_true",
+                    help="start from a solved cube and play the scramble first (eval file only: the scramble "
+                         "moves are regenerated from the eval's seed and checked against the saved state)")
+    ap.add_argument("--scramble-turn-seconds", type=float, default=0.10,
+                    help="duration of a quarter turn while scrambling (with --show-scramble)")
     ap.add_argument("--title", default="CubeGPT-4")
     ap.add_argument("--subtitle", help="default: the beam width from the eval file")
     ap.add_argument("--size", default="1080x1080", help="WIDTHxHEIGHT (even numbers)")
@@ -405,9 +415,15 @@ def main():
     if args.scramble:
         scramble, moves = args.scramble, (args.moves or "").split()
     elif args.eval_json:
-        solves = json.loads(Path(args.eval_json).read_text())["solves"]
-        solve = next(s for s in solves if s["idx"] == (args.idx[0] if args.idx else 0))
+        result = json.loads(Path(args.eval_json).read_text())
+        solve = next(s for s in result["solves"] if s["idx"] == (args.idx[0] if args.idx else 0))
         scramble, moves = solve["scramble"], solve["moves"]
+        if args.show_scramble:
+            import numpy as np
+            from cubegpt.cube import scrambled
+            state = scrambled(result["spec"]["scramble_moves"], np.random.default_rng([result["spec"]["seed"], solve["idx"]]))
+            scramble_moves = state.move_names()
+            assert state.cube_string == scramble, "regenerated scramble does not match the saved cube"
         if subtitle is None:
             subtitle = f"beam width {solve['width']:,}"
     else:
@@ -416,6 +432,8 @@ def main():
     scene = Scene(scramble, moves, width, height, args.title, subtitle)
     if not scene.solved:
         print("warning: these moves do not solve this scramble")
+    if args.show_scramble and not args.eval_json:
+        ap.error("--show-scramble needs an eval file")
 
     if args.still is not None:
         done = min(int(args.still), len(moves))
@@ -424,6 +442,14 @@ def main():
         print(f"wrote {args.out}")
     else:
         images = (scene.frame(*f) for f in timeline(scene, args.fps, args.turn_seconds))
+        if args.show_scramble:
+            import itertools
+            before = Scene(solved_string, scramble_moves, width, height, args.title, subtitle, label="scramble")
+            assert before.states[-1] == scramble
+            images = itertools.chain(
+                (before.frame(*f) for f in timeline(before, args.fps, args.scramble_turn_seconds, intro=1.0,
+                                                    outro_spin=0, outro_hold=0, gap=0.0)),
+                (scene.frame(*f) for f in timeline(scene, args.fps, args.turn_seconds, intro=1.2)))
         frames = encode(images, width, height, args.out, args.fps, args.crf)
         print(f"wrote {args.out}: {len(moves)} moves, {frames} frames, {frames / args.fps:.1f} s")
 
