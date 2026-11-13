@@ -1,6 +1,6 @@
 ![](images/cubegpt4-logo.webp)
 
-# CubeGPT-3 and CubeGPT-4: Scaling up Transformer-based Rubik's Cube Solvers
+# CubeGPT-4: Scaling up Transformer-based Rubik's Cube Solvers
 A research report about approaching optimality.
 
 ## Introduction
@@ -37,7 +37,7 @@ In order of being added:
 * **Gated MLP**: f(x) = C(Ax * SiLU(Bx)) instead of f(x) = B(GeLU(Ax)).
 * **Mixture of Experts (MoE)**: Deepseek V3-style, 8 experts with 1 active, using explicitly tuned expert biases for load balancing. This adds capacity while holding the number of active parameters the same as CubeGPT-2.
 
-Trained for 307M samples, this is CubeGPT-3-8A1-t300m.
+Trained for 307M samples, this is CubeGPT-3-8A1-t300m or just CubeGPT-3.
 
 ### CubeGPT-3 → CubeGPT-3.1
 
@@ -74,12 +74,21 @@ The result is a model with a fifth of the parameters of CubeGPT-3.1 that is bett
 
 |Model|Training Examples (Millions)|Mean Squared Error|Within-3-Accuracy| Within-4-Accuracy|Accuracy (When rounding to nearest int)|
 | --- | --- | --- | --- | --- | --- |
-|CubeGPT-2g-PFT | 26.2 | 4.70 | 82.49% | 91.37% | 37.88% |
+|CubeGPT-2 | 26.2 | 4.70 | 82.49% | 91.37% | 37.88% |
 |CubeGPT-CLS-t154mPFT | 204.8 | 4.30 | 83.96% | 92.40% | 42.50% |
-|CubeGPT-3-8A1-t300m | 307.2 |  4.01 | 84.8% | 93.0% | 44.9%
-|CubeGPT-3-1-t300m | 307.2 |  3.01 | 88.83% | 95.56% | 50.91%
-|CubeGPT-4-t1b | 1,152 | **2.68** | **90.22%** | **96.30%** | **53.84%**
+|CubeGPT-3 | 307.2 |  4.01 | 84.8% | 93.0% | 44.9%
+|CubeGPT-3.1 | 307.2 |  3.01 | 88.83% | 95.56% | 50.91%
+|CubeGPT-4 | 1,152 | **2.68** | **90.22%** | **96.30%** | **53.84%**
 
+This table is against random scrambles. The benefit is a lot of data, and matching the training distribution, but this is low quality data.
+
+We can generate higher quality data using our own model to solve the cubes, giving labels that are much closer to the truth. Technically this biases any metric toward the model used to solve it, but in practice this bias is not noticeable; for instance when we generate this data using CubeGPT-3's solves, the better models still score better. The sample size is just over 3600 states (technically, we should also note these aren't statistically independent).
+
+|Model|Mean Squared Error|Accuracy (When rounding to nearest int)|Within-1-Accuracy|Within-2-Accuracy|Within-3-Accuracy|Within-4-Accuracy|
+| --- | --- | --- | --- | --- | --- | --- |
+|CubeGPT-3 | 1.86 | 50.12% | 65.22% | 85.24% | 94.71% | 98.64% |
+|CubeGPT-3.1 | 1.16 | 59.07% | 73.64% | 91.00% | 97.73% | 99.64% |
+|CubeGPT-4 | **0.92** | **61.31%** | **77.29%** | **92.97%** | **98.64%** | **99.97%** |
 
 ## Solving
 
@@ -113,14 +122,23 @@ How calibrated are our models? Measured against our best found solutions, CubeGP
 
 The plain beam search algorithm can be significantly optimized upon to get us much more efficient solutions. 
 
-![](images/readme/beam_rank.png)
-
-This is a graph of the rank of the final solution versus the progress into the solution. A few moves in, most solutions are under rank 1000, meaning the model recognizes them as top 25% candidates. But a lot are also in the upper end, some reaching dangerously close to 4000 (which would get them cut out). This happens mostly within the first 10-12 moves; after that, a lot of width is being *wasted* when the network has already identified the solution and ranks it in the top 10-100. This motivates our optimizations:
+**De-duplication.** Different move orders often reach the same cube state: `U D` and `D U`, for example. We remove these to allow more room for unique states. This also makes it much faster because less redundant model calls are made.
 
 **Width scheduling.** We widen the early steps and thin down the later steps. This keeps total compute essentially constant (or faster), and gives more room for solutions to not be cut out early. 
 
-**De-duplication.** Different move orders often reach the same cube state: `U D` and `D U`, for example. We remove these to allow more room for unique states. This also makes it much faster because less redundant model calls are made.
+![](images/readme/beam_rank.png)
 
+This is a graph of the rank of the final solution versus the progress into the solution. A few moves in, most solutions are under rank 1000, meaning the model recognizes them as top 25% candidates. But a lot are also in the upper end, some reaching dangerously close to 4000 (which would get them cut out). This happens mostly within the first 10-12 moves; after that, a lot of width is being *wasted* when the network has already identified the solution and ranks it in the top 10-100. This motivates width scheduling.
+
+We choose the following widths: 
+|Compute (same as flat width)| Moves 1-8 | Moves 9-10 | Move 11 | Move 12 | Move 13 | Move 14 | Moves 15+ |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 4000 | 6000 | 6000 | 6000 | 3000 | 1500 | 750 | 500 |
+| 16000 | 32000 | 32000 | 4000 | 1000 | 250 | 100 | 100 |
+| 64000 | 128000 | 64000 | 8000 | 1000 | 100 | 100 | 100 |
+
+
+Optimized beam search is significantly better: at effective width 16000, it beats plain beam search at width 64000. Improvements are consistent across effective widths. In fact, across our test set, they have only improved solutions and never degraded them, which we take as a moderately strong sign of robust improvement.
 
 |Effective width| Search | Average Moves | MAO | Solved Optimally | Optimal + 1 | Seconds per Solve |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -131,15 +149,7 @@ This is a graph of the rank of the final solution versus the progress into the s
 | 64000 | Plain | 18.15 | 0.37 | 66.0% | 31.0% | 63.9 |
 | 64000 | Optimized | **18.00** | **0.22** | **80.0%** | 18.0% | **40.0** |
 
-The optimized rows are de-duplicated and use these width schedules (beam width after each move):
 
-|Compute (same as flat width)| Moves 1-8 | Moves 9-10 | Move 11 | Move 12 | Move 13 | Move 14 | Moves 15+ |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 4000 | 6000 | 6000 | 6000 | 3000 | 1500 | 750 | 500 |
-| 16000 | 32000 | 32000 | 4000 | 1000 | 250 | 100 | 100 |
-| 64000 | 128000 | 64000 | 8000 | 1000 | 100 | 100 | 100 |
-
-Optimized beam search is significantly better: at effective width 16000, it beats plain beam search at width 64000. Improvements are consistent across effective widths. In fact, across our test set, they have only improved solutions and never degraded them, which we take as a moderately strong sign of robust improvement.
 
 ## More Solve Videos
 
